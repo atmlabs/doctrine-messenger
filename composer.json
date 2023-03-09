@@ -1,5 +1,5 @@
 {
-    "name": "symfony/doctrine-messenger",
+    "name": "atmlabs/doctrine-messenger",
     "type": "symfony-messenger-bridge",
     "description": "Symfony Doctrine Messenger Bridge",
     "keywords": [],
