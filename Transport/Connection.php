@@ -21,6 +21,7 @@ use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\OraclePlatform;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\DBAL\Result;
+use Doctrine\DBAL\Schema\AbstractAsset;
 use Doctrine\DBAL\Schema\AbstractSchemaManager;
 use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\Schema;
@@ -47,6 +48,7 @@ class Connection implements ResetInterface
         'queue_name' => 'default',
         'redeliver_timeout' => 3600,
         'auto_setup' => true,
+        'setup_dbal_schema_filter' => null,
     ];
 
     /**
@@ -278,7 +280,7 @@ class Connection implements ResetInterface
     {
         $configuration = $this->driverConnection->getConfiguration();
         $assetFilter = $configuration->getSchemaAssetsFilter();
-        $configuration->setSchemaAssetsFilter(null);
+        $configuration->setSchemaAssetsFilter($this->getSetupAssetsFilter());
         $this->updateSchema();
         $configuration->setSchemaAssetsFilter($assetFilter);
         $this->autoSetup = false;
@@ -479,6 +481,21 @@ class Connection implements ResetInterface
                 $this->driverConnection->exec($sql);
             }
         }
+    }
+
+    private function getSetupAssetsFilter(): ?callable
+    {
+        if (!is_string($filterRegex = $this->configuration['setup_dbal_schema_filter'])) {
+            return null;
+        }
+
+        return function ($assetName) use ($filterRegex): bool {
+            if ($assetName instanceof AbstractAsset) {
+                $assetName = $assetName->getName();
+            }
+
+            return (bool) preg_match($filterRegex, $assetName);
+        };
     }
 
     private function createSchemaManager(): AbstractSchemaManager
